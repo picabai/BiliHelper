@@ -14,6 +14,7 @@ require "Traits/userHelper.php";
 require "Traits/otherGift.php";
 require "Traits/activityLottery.php";
 require "Traits/groupSign.php";
+require "Traits/noticeManager.php";
 
 class Bilibili
 {
@@ -26,6 +27,7 @@ class Bilibili
     use otherGift;
     use activityLottery;
     use groupSign;
+    use noticeManager;
 
     // 主播房间 id
     public $roomid = '3746256';
@@ -96,10 +98,12 @@ class Bilibili
             'privateSendMsg' => $this->start,
             //应援团签到
             'groupSign' => $this->start,
+            //实物抽奖
+            'drawLottery' => $this->start,
             //刷新cookie 周期20小时
-            'refreshCookie' => $this->start + 20 * 60 * 60,
+            'refreshCookie' => $this->start + 48 * 60 * 60,
             //刷新token 周期100小时
-            'refreshToken' => $this->start + 100 * 60 * 60,
+            'refreshToken' => $this->start + 120 * 60 * 60,
         );
     }
 
@@ -128,6 +132,7 @@ class Bilibili
         }
 
         $this->uid = $data['data']['info']['uid'];
+        $this->_userDataInfo['name'] = $data['data']['info']['uname'];
 
         preg_match('/bili_jct=(.{32})/', $this->cookie, $token);
         $this->token = isset($token[1]) ? $token[1] : '';
@@ -176,6 +181,9 @@ class Bilibili
         if (time() < $this->lock['sign']) {
             return true;
         }
+        //debug 可删
+        $this->log('当前时间:' . date("Y-m-d H:i:s"), 'yellow', 'DEBUG');
+        $this->log('签到时间:' . date("Y-m-d H:i:s", $this->lock['sign']), 'yellow', 'DEBUG');
 
         $api = $this->prefix . 'sign/doSign';
         $raw = $this->curl($api);
@@ -194,6 +202,9 @@ class Bilibili
         }
         // 签到成功
         $this->log($data['msg'], 'blue', '签到');
+
+        //推送签到结果信息
+        $this->infoSendManager('todaySign', $data['msg']);
 
         $api = $this->prefix . 'giftBag/sendDaily?_=' . round(microtime(true) * 1000);
         $raw = $this->curl($api);
