@@ -10,8 +10,21 @@ trait userHelper
     public $_appSecret = '560c52ccd288fed045859ed18bffd973';
     //prefix
     public $_baseUrl = 'http://passport.bilibili.com/';
+    //查看是否实名
+    public $_stormFlag = true;
 
-    //TODO
+    //查看是否实名
+    public function realnameCheck()
+    {
+        $url = "http://account.bilibili.com/identify/index";
+        $raw = $this->curl($url);
+        $de_raw = json_decode($raw,true);
+        //检查有没有名字，没有则没实名
+        if (!$de_raw['data']['memberPerson']['realname']){
+            $this->_stormFlag = false;
+        }
+        return true;
+    }
     //刷新cookie
     public function getCookie()
     {
@@ -61,14 +74,14 @@ trait userHelper
             $temp = $this->refreshToken();
             //失败就跳出
             if (!$temp) return true;
-            $this->lock['refreshToken'] = time() + 120 * 60 * 60;
+            $this->lock['refreshToken'] = time() + 480 * 60 * 60;
             $this->log('Token: 刷新成功', 'green', 'BiliLogin');
         }
         $temp = $this->getCookie();
         //失败就跳出
         if (!$temp) return true;
         $this->cookie = $this->trimAll($temp);
-        $this->lock['refreshCookie'] = time() + 48 * 60 * 60;
+        $this->lock['refreshCookie'] = time() + 240 * 60 * 60;
         $this->log('Cookie: 刷新成功', 'green', 'BiliLogin');
 
         //推送Cookie刷新成功信息

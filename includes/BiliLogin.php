@@ -4,7 +4,7 @@
  *  Author: Mudew
  *  Version: 0.0.1
  */
-require 'Ocr.php';
+header("Content-Type:text/html; charset=utf-8");
 
 class BiliLogin
 {
@@ -33,13 +33,13 @@ class BiliLogin
 
     public function start()
     {
-        $this->log('加载账号密码', 'lightgray', 'BiliLogin');
+        $this->log('加载账号密码', 'lightgray', 'BILILOGIN');
 
         if (empty($this->_user) || empty($this->_pass)) {
-            $this->log('配置为空,请检查配置', 'red', 'BiliLogin');
+            $this->log('配置为空,请检查配置', 'red', 'BILILOGIN');
             die;
         }
-        $this->log('加载成功,获取加密信息', 'green', 'BiliLogin');
+        $this->log('加载成功,获取加密信息', 'green', 'BILILOGIN');
         $this->_keyHash = $this->getKey();
 
         $pass = $this->_keyHash['hash'] . $this->_pass;
@@ -61,23 +61,29 @@ class BiliLogin
         $loginInfo = json_decode($res, true);
 
         if (array_key_exists('message', $loginInfo)) {
-            $this->log($loginInfo['message'], 'red', 'BiliLogin');
+            switch ($loginInfo['code']){
+                case -629:
+                    //账号或者密码错误
+                    $this->log($loginInfo['message'], 'red', 'BILILOGIN');
+                    exit("检查账号密码是否正确!");
+                    break;
 
-            if ($loginInfo['code'] == -105) {
-                /**
-                 *  TODO 验证码登陆问题
-                 *  $loginInfo['message'] = 'CAPTCHA is not match'
-                 */
-                unset($loginInfo);
-                $loginInfo = $this->captchaLogin($url, $data);
+                case -105:
+                    /**
+                     *  TODO 验证码登陆问题
+                     *  $loginInfo['message'] = 'CAPTCHA is not match'
+                     */
+                    unset($loginInfo);
+                    $loginInfo = $this->captchaLogin($url, $data);
+                    break;
+
+                default:
+                    $this->log($loginInfo['message'], 'red', 'BILILOGIN');
+                    break;
             }
         }
 
-        if ($loginInfo['code'] != 0) {
-            $this->log($loginInfo['message'], 'red', 'BiliLogin');
-        }
-
-        $this->log('获取Cookie成功', 'green', 'BiliLogin');
+        $this->log('获取Cookie成功', 'green', 'BILILOGIN');
         $cookie_file = $this->saveCookie($loginInfo);
         /**
          * return
@@ -101,7 +107,9 @@ class BiliLogin
         foreach ($cookies as $cookie) {
             $temp_cookie .= $cookie['name'] . '=' . $cookie['value'] . ';';
         }
+
         $filename = $this->getUserInfo($temp_cookie) . '.cookies';
+
         //返回 用户名.cookies 路径
         $cookie_file = './user/' . $filename;
         if (is_file($cookie_file)) {
@@ -149,7 +157,7 @@ class BiliLogin
         ];
         $ocr_raw = $this->curl($ocr_captcha_url, $ocr_data);
 
-        $this->log('验证码识别: ' . $ocr_raw, 'green', 'BiliLogin');
+        $this->log('验证码识别: ' . $ocr_raw, 'green', 'BiliLBILILOGINogin');
 
         $data['captcha'] = $ocr_raw;
         ksort($data);
@@ -160,10 +168,10 @@ class BiliLogin
         $loginInfo = json_decode($raw, true);
 
         if ($loginInfo['code'] == -105) {
-            $this->log('验证码识别: 错误，重试!', 'red', 'BiliLogin');
+            $this->log('验证码识别: 错误，重试!', 'red', 'BILILOGIN');
             exit();
         }
-        $this->log('验证码识别: 成功,开始登陆!', 'green', 'BiliLogin');
+        $this->log('验证码识别: 成功,开始登陆!', 'green', 'BILILOGIN');
 
         return $loginInfo;
     }
@@ -175,7 +183,7 @@ class BiliLogin
         $cookie = 'sid=' . $this->getRandCode($max);
         $res = $this->curl($url, null, false, $cookie);
 
-        $this->log('验证码识别: 生成验证码中...', 'green', 'BiliLogin');
+        $this->log('验证码识别: 生成验证码中...', 'green', 'BILILOGIN');
 
         return [
             'code' => '200',
@@ -201,7 +209,7 @@ class BiliLogin
         $res = $this->curl($url, null, true);
         preg_match_all('/Set-Cookie: (.*);/iU', $res, $cookie);
         if (empty($cookie)) {
-            $this->log('Cookie获取失败', 'red', 'BiliLogin');
+            $this->log('Cookie获取失败', 'red', 'BILILOGIN');
         }
         return $cookie;
 
@@ -240,7 +248,7 @@ class BiliLogin
         $public_key = str_replace('\n', '', $tmp['data']['key']);
         //Public key & Hash
         if (!array_key_exists('data', $tmp)) {
-            $this->log('加密信息获取失败', 'red', 'BiliLogin');
+            $this->log('加密信息获取失败', 'red', 'BILILOGIN');
             die;
         }
         return [

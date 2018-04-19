@@ -30,19 +30,28 @@ trait liveGlobal
         //TODO 可能需要修改逻辑
         if (time() > $this->lock['wincheck']) {
             $data = $this->winningRecord();
-            if ($data['list'] == '') {
-                $this->log("WIN: " . $data['month'] . '|No Winning ~', 'magenta', 'LIVE');
+            if (empty($data['list'])) {
+                $this->log("WIN: " . $data['month'] . '|没有中奖记录 ~', 'magenta', 'LIVE');
             } else {
-                $data = date("Y-m-d H:i:s") . '|' . $data['list'];
+                $init_time = strtotime(date("y-m-d h:i:s")); //当前时间
+                foreach ($data['list'] as $gift) {
+                    $next_time = strtotime($gift['create_time']);  //礼物时间
+                    $day = ceil(($init_time - $next_time) / 86400);  //60s*60min*24h
 
-                //推送实物信息
-                $this->infoSendManager('winIng', $data);
+                    if ($day <= 2 && $gift['update_time'] == '') {
+                        $data_info = '您在: ' . $gift['create_time'] . '抽中[' . $gift['gift_name'] . 'X' . $gift['gift_num'] . ']未查看!';
 
-                $this->writeFileTo('./record/', $this->_userDataInfo['name'] . '-Winning.txt', $data);
-                //TODO 详细写入信息没做
-                $this->log("Win:" . $data['month'] . '有中奖记录 ~', 'cyan', 'LIVE');
+                        //推送实物信息
+                        $this->infoSendManager('winIng', $data_info);
+                        //TODO 详细写入信息没做
+                        $this->writeFileTo('./record/', $this->_userDataInfo['name'] . '-Winning.txt', $data_info);
+
+                        $this->log("Win:" . $data['month'] . '有中奖记录,注意查看 ~', 'cyan', 'LIVE');
+                    }
+                }
             }
-            $this->lock['wincheck'] = time() + 12 * 60 * 60;
+            //暂定24小时查询一次
+            $this->lock['wincheck'] = time() + 24 * 60 * 60;
         }
 
         return $this->parseRespJson($resp);
@@ -75,46 +84,47 @@ trait liveGlobal
         $raw = $this->curl($url, $payload);
         $de_raw = json_decode($raw, true);
         if ($de_raw['code'] != 0) {
-            $this->log($de_raw['msg'], 'bg_red', '心跳');
+            $this->log($de_raw['msg'], 'bg_red', 'HEART');
             return false;
         }
         $this->lock['appHeart'] = time() + 5 * 60;
 
-        $this->log('AppHeart: OK!', 'magenta', '心跳');
+        $this->log('AppHeart: OK!', 'magenta', 'HEART');
 
         $info = '昵称: ' . $this->_userDataInfo['name'] . '|等级: ' . $this->_userDataInfo['level'] . '|';
-        $info .= '银瓜子: ' . $this->_userDataInfo['silver'];
-        $info1 = '金瓜子: ' . $this->_userDataInfo['gold'] . '|';
-        $info1 .= '硬币: ' . $this->_userDataInfo['billCoin'] . '|经验值: ';
+        $info .= '金瓜子: ' . $this->_userDataInfo['gold'] . '|';
+        $info .= '硬币: ' . $this->_userDataInfo['billCoin'];
+
+        $info1 = '银瓜子: ' . $this->_userDataInfo['silver'] . '|经验值: ';
         $info1 .= $this->_userDataInfo['user_intimacy'] . '/' . $this->_userDataInfo['user_next_intimacy'];
 
-        $this->log($info, 'magenta', '心跳');
-        $this->log($info1, 'magenta', '心跳');
+        $this->log($info, 'magenta', 'HEART');
+        $this->log($info1, 'magenta', 'HEART');
 
         return true;
     }
 
     //中奖查询
-    public function winningRecord()
+    public function winningRecord(): array
     {
         $raw = $this->curl($this->_liveWinningApi);
-        $raw = json_decode($raw, true);
+        $de_raw = json_decode($raw, true);
 
-        $month = $raw['data']['month_list'][0]['Ym'];
+        $month = $de_raw['data']['month_list'][0]['Ym'];
 
         $url = $this->_liveWinningApi . $month;
         $raw = $this->curl($url);
-        $raw = json_decode($raw, true);
+        $de_raw = json_decode($raw, true);
         //TODO 暂时么有实际中奖参数
-        if (empty($raw['data']['list'])) {
+        if (empty($de_raw['data']['list'])) {
             return [
                 'month' => $month,
-                'list' => '',
+                'list' => [],
             ];
         } else {
             return [
                 'month' => $month,
-                'list' => $raw['data']['list'],
+                'list' => $de_raw['data']['list'],
             ];
         }
     }
@@ -335,7 +345,7 @@ trait liveGlobal
                  */
                 //TODO 节奏风暴暂时搁置
                 if (strpos($resp['msg'], $this->_stormKeyWord) !== false) {
-                    $this->writeFileTo(' ./tmp / ', 'storm . txt', json_encode($resp));
+                    $this->writeFileTo('./tmp/', 'storm.txt', json_encode($resp));
                     return [
                         'type' => 'storm',
                         'roomid' => $resp['roomid'],
@@ -508,7 +518,7 @@ trait liveGlobal
     //获取用户UID
     public function getUserInfo()
     {
-        $url = $this->prefix . 'i / api / liveinfo';
+        $url = $this->prefix . 'i/api/liveinfo';
         $raw = $this->curl($url);
         $raw = json_decode($raw, true);
         //TODO 暂时返回uid
@@ -522,7 +532,7 @@ trait liveGlobal
         $unit = array('b', 'kb', 'mb', 'gb', 'tb', 'pb');
         $memory = @round($size / pow(1024, ($i = floor(log($size, 1024)))), 2) . ' ' . $unit[$i];
         $data = $msg . '时内存: ' . $memory;
-        $this->writeFileTo(' ./tmp / ', 'memory . log', $data);
+        $this->writeFileTo('./tmp/', 'memory.log', $data);
     }
 
     //随机延时
@@ -567,6 +577,28 @@ trait liveGlobal
     {
         $rule = array("\r\n", " ", "　", "\t", "\n", "\r");
         return str_replace($rule, '', $str);
+    }
+
+    //被封禁访问
+    public function bannedVisit(): bool
+    {
+        //获取当前时间
+        $block_time = strtotime(date("Y-m-d H:i:s"));
+        //第二天凌晨时间
+        $unblock_time = strtotime(date("Y-m-d", strtotime("+1 day", $block_time)));
+        //00:10:00解封
+        $second = ceil($unblock_time - $block_time) + 10 * 60;
+        $hour = $second / 60 / 60;
+
+        //推送封禁信息
+        $this->infoSendManager('banned', $hour);
+        $this->log('Sleep: 封禁睡眠时间(自动唤醒)!', 'yellow', 'SLEEP');
+
+        //睡眠
+        sleep($second);
+        $this->log('Sleep: 封禁自动唤醒)!', 'yellow', 'SLEEP');
+        return true;
+
     }
 
 }
