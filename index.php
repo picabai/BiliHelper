@@ -1,49 +1,102 @@
 <?php
+
+
+/**
+ *  Website: https://mudew.com/
+ *  Author: Lkeme
+ *  Version: 0.0.2
+ *  License: The MIT License
+ *  Updated: 20180425 18:47:50
+ */
+
+namespace lkeme\BiliHelper;
+
+//autoload
+require 'vendor/autoload.php';
+
+use Dotenv\Dotenv;
+use lkeme\BiliHelper\Daily;
+use lkeme\BiliHelper\GiftSend;
+use lkeme\BiliHelper\Heart;
+use lkeme\BiliHelper\Login;
+use lkeme\BiliHelper\Silver;
+use lkeme\BiliHelper\Task;
+use lkeme\BiliHelper\Silver2Coin;
+use lkeme\BiliHelper\GiftHeart;
+use lkeme\BiliHelper\MaterialObject;
+use lkeme\BiliHelper\GroupSignIn;
+use lkeme\BiliHelper\Live;
+use lkeme\BiliHelper\Winning;
+use lkeme\BiliHelper\Socket;
+
+
 set_time_limit(0);
 header("Content-Type:text/html; charset=utf-8");
-require "includes/Bilibili.php";
-require "includes/BiliLogin.php";
+date_default_timezone_set('Asia/Shanghai');
 
-//输入账号密码必填
-$account = [
-    'username' => '',
-    'password' => '',
-];
-//判断
-if ($account['username'] == '' || $account['password'] == '') {
-    die("账号密码为空,检查配置,必填项!");
-}
-//第一次获取cookie
-$login = new BiliLogin($account);
-$data = $login->start();
-$cookie = file_get_contents($data['cookie']);
-//unlink($data['cookie']);
-//start
-function start($account, $cookie, $data)
+class Index
 {
-    $api = new Bilibili($cookie, $data);
-    $api->debug = false;
-    $api->color = true;
-    $api->_accessToken = $data['access_token'];
-    $api->_refreshToken = $data['refresh_token'];
-    //要指定投喂过期礼物的直播间id
-    $api->roomid = 9522051;
-    //要指定读弹幕消息的直播间id
-    $api->_roomRealId = '';
-    //Server酱接口，有key则推送，为空则不推送
-    $api->_scKey = '';
+    public static $conf_file = null;
+    public static $dotenv = null;
 
-    $api->callback = function () {
-        //递归调用
-        global $account;
-        $login = new BiliLogin($account);
-        $data = $login->start();
-        $cookie = file_get_contents($data['cookie']);
-        //unlink($data['cookie']);
-        //unlink('./tmp/memory.log');
-        call_user_func('start', $account, $cookie, $data);
-    };
-    $api->run();
+    // RUN
+    public static function run($conf_file)
+    {
+        self::$conf_file = $conf_file;
+        self::loadConfigFile();
+
+        while (true) {
+            if (!Login::check()) {
+                self::$dotenv->overload();
+            }
+            Daily::run();
+            GiftSend::run();
+            Heart::run();
+            Silver::run();
+            Task::run();
+            Silver2Coin::run();
+            GroupSignIn::run();
+            Live::run();
+            GiftHeart::run();
+            Winning::run();
+            MaterialObject::run();
+            Socket::run();
+
+            sleep(0.5);
+        }
+    }
+
+    protected static function loadConfigFile()
+    {
+        $file_path = __DIR__ . '/conf/' . self::$conf_file;
+
+        if (is_file($file_path) && self::$conf_file != 'user.conf') {
+            $load_files = [
+                'bili.conf',
+                self::$conf_file,
+            ];
+        } else {
+            $load_files = [
+                'bili.conf',
+                'user.conf',
+            ];
+        }
+        foreach ($load_files as $load_file) {
+            self::$dotenv = new Dotenv(__DIR__ . '/conf', $load_file);
+            self::$dotenv->load();
+        }
+
+        // load ACCESS_KEY
+        Login::run();
+        self::$dotenv->overload();
+    }
+
 }
 
-call_user_func('start', $account, $cookie, $data);
+// LOAD
+$conf_file = isset($argv[1]) ? $argv[1] : 'user.conf';
+// RUN
+Index::run($conf_file);
+
+
+
