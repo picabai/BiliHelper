@@ -3,17 +3,11 @@
 /**
  *  Website: https://mudew.com/
  *  Author: Lkeme
- *  Version: 0.0.2
  *  License: The MIT License
- *  Updated: 2018-4-27 17:48:38
+ *  Updated: 2018
  */
 
 namespace lkeme\BiliHelper;
-
-use lkeme\BiliHelper\Curl;
-use lkeme\BiliHelper\Sign;
-use lkeme\BiliHelper\Log;
-use lkeme\BiliHelper\SmallTV;
 
 class Winning
 {
@@ -22,8 +16,8 @@ class Winning
     // RUN
     public static function run()
     {
-        // 小电视
-        SmallTV::smallTvResult();
+        // 活动统一
+        RaffleHandler::resultWeb();
 
         // 实物
         self::winningRecords();

@@ -3,9 +3,8 @@
 /**
  *  Website: https://mudew.com/
  *  Author: Lkeme
- *  Version: 0.0.2
  *  License: The MIT License
- *  Updated: 20180425 18:47:50
+ *  Updated: 2018
  */
 
 namespace lkeme\BiliHelper;
@@ -13,19 +12,18 @@ namespace lkeme\BiliHelper;
 use lkeme\BiliHelper\Curl;
 use lkeme\BiliHelper\Sign;
 use lkeme\BiliHelper\Log;
-use lkeme\BiliHelper\SmallTV;
 use lkeme\BiliHelper\Storm;
 
 class DataTreating
 {
-    // SMALLTV KEY
-    protected static $smalltv_keyword = '小电视';
     // STORM KEY
     protected static $storm_keyword = '节奏风暴';
     // ACTIVE KEY
-    protected static $active_keyword = [
-        '漫天花雨',
-        '怦然心动',
+    protected static $active_keywords = [
+        '摩天大楼',
+        'C位光环',
+        '小电视飞船',
+        '盛夏么么茶',
     ];
 
     // PARSE ARRAY
@@ -36,9 +34,7 @@ class DataTreating
                 Storm::run($data);
                 break;
             case 'active':
-                break;
-            case 'smalltv':
-                SmallTV::run($data['room_id']);
+                RaffleHandler::run($data['room_id'], 'USE_ACTIVE', $data['title']);
                 break;
             case 'unkown':
                 break;
@@ -48,13 +44,12 @@ class DataTreating
         return;
     }
 
-
     // PARSE JSON
     public static function socketJsonToArray($resp)
     {
         if (strlen($resp) == 4) {
             $num = unpack('N', $resp)[1];
-            Log::info('当前直播间有' . $num . '人在线!');
+            Log::info("当前直播间现有[{$num}]人聚众搞基!");
             return false;
         }
 
@@ -115,12 +110,14 @@ class DataTreating
                         'room_id' => $resp['roomid'],
                     ];
                 }
+
                 // TODO 活动抽奖 暂定每期修改
-                foreach (self::$active_keyword as $value) {
+                foreach (self::$active_keywords as $value) {
                     if (strpos($resp['msg'], $value) !== false) {
                         return [
                             'type' => 'active',
-                            'room_id' => $resp['real_roomid'],
+                            'title' => $value,
+                            'room_id' => $resp['real_roomid']
                         ];
                     }
                 }
@@ -129,11 +126,15 @@ class DataTreating
                 /**
                  * 系统消息, 广播
                  */
-                if (strpos($resp['msg'], self::$smalltv_keyword) !== false) {
-                    return [
-                        'type' => 'smalltv',
-                        'room_id' => $resp['real_roomid'],
-                    ];
+                // TODO 小电视|摩天大楼|C位光环|盛夏么么茶统一
+                foreach (self::$active_keywords as $value) {
+                    if (strpos($resp['msg'], $value) !== false) {
+                        return [
+                            'type' => 'active',
+                            'title' => $value,
+                            'room_id' => $resp['real_roomid']
+                        ];
+                    }
                 }
                 var_dump($resp);
                 break;
@@ -142,7 +143,7 @@ class DataTreating
                  * 特殊礼物消息 --节奏风暴
                  */
                 //暂时打印节奏风暴包
-                var_dump($resp);
+                //var_dump($resp);
                 if (array_key_exists('39', $resp['data'])) {
                     //TODO
                     if ($resp['data']['39']['action'] == 'start') {

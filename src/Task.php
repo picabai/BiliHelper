@@ -1,20 +1,13 @@
 <?php
 
-/*!
- * metowolf BilibiliHelper
- * https://i-meto.com/
- * Version 18.04.25 (0.7.3)
- *
- * Copyright 2018, metowolf
- * Released under the MIT license
+/**
+ *  Website: https://mudew.com/
+ *  Author: Lkeme
+ *  License: The MIT License
+ *  Updated: 2018
  */
 
 namespace lkeme\BiliHelper;
-
-use lkeme\BiliHelper\Curl;
-use lkeme\BiliHelper\Sign;
-use lkeme\BiliHelper\Log;
-use lkeme\BiliHelper\Notice;
 
 class Task
 {
@@ -96,7 +89,7 @@ class Task
         $data = json_decode($data, true);
 
         if (isset($data['code']) && $data['code']) {
-            Log::warning('「双端观看直播」任务奖励领取失败!', ['msg' => $data['message']]);
+            Log::warning("「双端观看直播」任务奖励领取失败，{$data['message']}!");
         } else {
             Log::info('奖励领取成功!');
             foreach ($info['awards'] as $vo) {

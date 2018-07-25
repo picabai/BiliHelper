@@ -3,18 +3,11 @@
 /**
  *  Website: https://mudew.com/
  *  Author: Lkeme
- *  Version: 0.0.2
  *  License: The MIT License
- *  Updated: 20180425 18:47:50
+ *  Updated: 2018
  */
 
 namespace lkeme\BiliHelper;
-
-use lkeme\BiliHelper\Curl;
-use lkeme\BiliHelper\Sign;
-use lkeme\BiliHelper\Log;
-use lkeme\BiliHelper\Live;
-use lkeme\BiliHelper\DataTreating;
 
 class Socket
 {
@@ -65,8 +58,8 @@ class Socket
         unset($errormsg);
         unset($errorcode);
         self::killConnection();
-        Log::warning('SOCKET连接断开,5秒后重新连接...');
-        sleep(5);
+//        Log::warning('SOCKET连接断开,5秒后重新连接...');
+//        sleep(5);
         self::start();
         return;
     }
@@ -108,7 +101,7 @@ class Socket
     protected static function start()
     {
         if (is_null(self::$socket_connection)) {
-            $room_id = empty(getenv('ROOM_ID_SOCKET')) ? Live::getUserRecommend() : Live::getRealRoomID(getenv('ROOM_ID_SOCKET'));
+            $room_id = empty(getenv('SOCKET_ROOM_ID')) ? Live::getUserRecommend() : Live::getRealRoomID(getenv('SOCKET_ROOM_ID'));
             $room_id = intval($room_id);
             if ($room_id) {
                 self::getSocketServer($room_id);
@@ -125,10 +118,10 @@ class Socket
         if (self::$heart_lock > time()) {
             return;
         }
-        $action_heart_beat = getenv('ACTIONHEARTBEAT');
+        $action_heart_beat = intval(getenv('ACTIONHEARTBEAT'));
         $str = pack('NnnNN', 16, 16, 1, $action_heart_beat, 1);
         socket_write(self::$socket_connection, $str, strlen($str));
-        Log::info('发送一次SOCKET心跳!');
+        Log::info('发送心跳包到弹幕服务器!');
         self::$heart_lock = time() + 30;
         return;
     }
@@ -136,22 +129,36 @@ class Socket
     // SOCKET CONNECT
     protected static function connectServer($room_id, $ip, $port)
     {
-        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        socket_connect($socket, $ip, $port);
-        $str = self::packMsg($room_id);
-        socket_write($socket, $str, strlen($str));
-        self::$socket_connection = $socket;
-        // TODO
-        Log::info('连接直播间[' . $room_id . ']弹幕服务器成功!');
-        return;
+        $falg = 10;
+        while ($falg) {
+            try {
+                $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+                socket_connect($socket, $ip, $port);
+                $str = self::packMsg($room_id);
+                socket_write($socket, $str, strlen($str));
+                self::$socket_connection = $socket;
+                // TODO
+                Log::info("连接到弹幕服务器[{$room_id}]成功!");
+                return;
+            } catch (\Exception $e) {
+                Log::info("连接到弹幕服务器[{$room_id}]失败!");
+                Log::warning($e);
+                $falg -= 1;
+            }
+        }
+        Log::info("连接弹幕服务器[{$room_id}]错误次数过多，检查网络!");
+        exit();
     }
 
     // PACK DATA
     protected static function packMsg($room_id)
     {
-        $uid = intval(getenv('UID'));
-        $action_entry = getenv('ACTIONENTRY');
-        $data = json_encode(['roomid' => $room_id, 'uid' => $uid]);
+        $action_entry = intval(getenv('ACTIONENTRY'));
+        $data = sprintf("{\"uid\":%d%08d,\"roomid\":%d}",
+            mt_rand(1000000, 2999999),
+            mt_rand(0, 99999999),
+            intval($room_id)
+        );
         return pack('NnnNN', 16 + strlen($data), 16, 1, $action_entry, 1) . $data;
     }
 
@@ -160,18 +167,23 @@ class Socket
     {
         while (1) {
             try {
-                $raw = Curl::get('https://api.live.bilibili.com/api/player?id=cid:' . $room_id);
-                $xml_dom = '<xml>' . $raw . '</xml>';
-                $parser = xml_parser_create();
-                xml_parse_into_struct($parser, $xml_dom, $resp, $index);
-                $domain = $resp[$index['DM_SERVER'][0]]['value'];
+                $payload = [
+                    'room_id' => $room_id,
+                ];
+                $data = Curl::get('https://api.live.bilibili.com/room/v1/Danmu/getConf', Sign::api($payload));
+                $data = json_decode($data, true);
 
-                self::$socket_ip = gethostbyname($domain);
-                self::$socket_port = $resp[$index['DM_PORT'][0]]['value'];
+                // TODO 判断
+                if (isset($data['code']) && $data['code']) {
+                    continue;
+                }
+
+                self::$socket_ip = gethostbyname($data['data']['host']);
+                self::$socket_port = $data['data']['port'];
 
                 break;
             } catch (\Exception $e) {
-                Log::warning('获取SOCKET服务器出错!', $e);
+                Log::warning("获取弹幕服务器出错，错误信息[{$e}]!");
                 continue;
             }
         }
