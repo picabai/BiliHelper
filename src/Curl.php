@@ -3,11 +3,15 @@
 /**
  *  Website: https://mudew.com/
  *  Author: Lkeme
+ *  Version: 0.0.2
  *  License: The MIT License
- *  Updated: 2018
+ *  Updated: 20180425 18:47:50
  */
 
 namespace lkeme\BiliHelper;
+
+use lkeme\BiliHelper\Log;
+
 
 class Curl
 {
@@ -17,13 +21,12 @@ class Curl
         'Accept-Language' => 'zh-cn',
         'Connection' => 'keep-alive',
         'Content-Type' => 'application/x-www-form-urlencoded',
-        'User-Agent' => 'User-Agent: bili-universal/6670 CFNetwork/897.15 Darwin/17.5.0',
+        'User-Agent' => 'User-Agent: bili-universal/6620 CFNetwork/897.15 Darwin/17.5.0',
     );
 
     public static function post($url, $payload = null)
     {
         $url = self::http2https($url);
-        Log::debug($url);
         $header = array_map(function ($k, $v) {
             return $k . ': ' . $v;
         }, array_keys(self::$header), self::$header);
@@ -41,9 +44,6 @@ class Curl
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
-        if (($cookie = getenv('COOKIE')) != "") {
-            curl_setopt($curl, CURLOPT_COOKIE, $cookie);
-        }
         if (getenv('USE_PROXY') == 'true') {
             curl_setopt($curl, CURLOPT_PROXY, getenv('PROXY_IP'));
             curl_setopt($curl, CURLOPT_PROXYPORT, getenv('PROXY_PORT'));
@@ -64,7 +64,7 @@ class Curl
 
     protected static function http2https($url)
     {
-        switch (getenv('USE_HTTPS')) {
+        switch (getenv('IS_HTTPS')) {
             case 'false':
                 if (strpos($url, 'ttps://')) {
                     $url = str_replace('https://', 'http://', $url);
@@ -77,10 +77,9 @@ class Curl
                 break;
             default:
                 Log::warning('当前协议设置不正确,请检查配置文件!');
-                die();
+                exit();
                 break;
         }
-
         return $url;
     }
 }

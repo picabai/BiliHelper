@@ -3,11 +3,17 @@
 /**
  *  Website: https://mudew.com/
  *  Author: Lkeme
+ *  Version: 0.0.2
  *  License: The MIT License
- *  Updated: 2018
+ *  Updated: 2018-4-27 17:48:28
  */
 
 namespace lkeme\BiliHelper;
+
+use lkeme\BiliHelper\Curl;
+use lkeme\BiliHelper\Sign;
+use lkeme\BiliHelper\Log;
+use lkeme\BiliHelper\User;
 
 class Notice
 {
@@ -19,7 +25,7 @@ class Notice
     // RUN
     public static function run($type, $result = '')
     {
-        if (getenv('USE_SCKEY') == "") {
+        if (empty(getenv('USE_SCKEY'))) {
             return;
         }
 
@@ -38,10 +44,10 @@ class Notice
         $nowtime = date('Y-m-d H:i:s');
 
         switch (self::$type) {
-            case 'raffle':
+            case 'smallTv':
                 $info = [
-                    'title' => '活动抽奖结果',
-                    'content' => '[' . $nowtime . ']' . ' 用户: ' . self::$uname . ' 在活动抽奖中获得: ' . self::$result,
+                    'title' => '小电视中奖结果',
+                    'content' => '[' . $nowtime . ']' . ' 用户: ' . self::$uname . ' 在小电视抽奖中获得: ' . self::$result,
                 ];
                 break;
             case 'storm':

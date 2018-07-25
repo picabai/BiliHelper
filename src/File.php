@@ -3,8 +3,9 @@
 /**
  *  Website: https://mudew.com/
  *  Author: Lkeme
+ *  Version: 0.0.2
  *  License: The MIT License
- *  Updated: 2018
+ *  Updated: 20180425 18:47:50
  */
 
 namespace lkeme\BiliHelper;
@@ -29,7 +30,5 @@ class File
             $key . '=' . $value,
             file_get_contents(__DIR__ . '/../conf/' . Index::$conf_file)
         ));
-        // 写入系统变量
-        putenv($key . '=' . $value);
     }
 }

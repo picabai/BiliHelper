@@ -1,12 +1,12 @@
 {
   "name": "lkeme/bilihelper",
+  "version": "0.0.2",
   "description": "B 站直播助手、直播挂机脚本 - PHP 版",
   "type": "project",
   "require": {
     "php": ">=7.0.0",
     "ext-curl": "*",
     "ext-openssl": "*",
-    "ext-sockets": "*",
     "vlucas/phpdotenv": "^2.4",
     "monolog/monolog": "^1.23",
     "bramus/monolog-colored-line-formatter": "^2.0"

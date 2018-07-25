@@ -3,8 +3,9 @@
 /**
  *  Website: https://mudew.com/
  *  Author: Lkeme
+ *  Version: 0.0.2
  *  License: The MIT License
- *  Updated: 2018
+ *  Updated: 20180425 18:47:50
  */
 
 namespace lkeme\BiliHelper;
@@ -13,7 +14,6 @@ use lkeme\BiliHelper\Curl;
 use lkeme\BiliHelper\Sign;
 use lkeme\BiliHelper\Log;
 use lkeme\BiliHelper\User;
-use lkeme\BiliHelper\Notice;
 
 class Live
 {
@@ -30,20 +30,21 @@ class Live
     public static function getUserRecommend()
     {
         while (1) {
-            $raw = Curl::get('https://api.live.bilibili.com/area/liveList?area=all&order=online&page=' . mt_rand(0, 5));
+            $page = rand(1, 10);
+            $raw = Curl::get('https://api.live.bilibili.com/area/liveList?area=all&order=online&page=' . $page);
             $de_raw = json_decode($raw, true);
             if ($de_raw['code'] != '0') {
                 continue;
             }
             break;
         }
-        $rand_num = mt_rand(1, 29);
-        
+        $rand_num = rand(1, 29);
         return $de_raw['data'][$rand_num]['roomid'];
+
     }
 
     // GET REALROOM_ID
-    public static function getRealRoomID($room_id)
+    public static function getRealRoomID(int $room_id): int
     {
         $raw = Curl::get('https://api.live.bilibili.com/room/v1/Room/room_init?id=' . $room_id);
         $de_raw = json_decode($raw, true);
@@ -75,7 +76,7 @@ class Live
     }
 
     // RANDOM DELAY
-    public static function randFloat($min = 0, $max = 3): bool
+    public static function randFloat($min = 3, $max = 5): bool
     {
         $rand = $min + mt_rand() / mt_getrandmax() * ($max - $min);
         sleep($rand);
@@ -111,7 +112,7 @@ class Live
         $hour = date('H');
         if ($hour >= 2 && $hour < 6) {
             self::bannedVisit('sleep');
-            Log::warning('休眠时间,暂停非必要任务,4小时后自动开启!');
+            Log::warning('休眠时间,暂停非必要任务,5小时后自动开启!');
             return;
         }
 
@@ -128,28 +129,20 @@ class Live
     //被封禁访问
     public static function bannedVisit($arg)
     {
-        //获取当前时间
+        // 获取当前时间
         $block_time = strtotime(date("Y-m-d H:i:s"));
-
         if ($arg == 'ban') {
             $unblock_time = strtotime(date("Y-m-d", strtotime("+1 day", $block_time)));
         } elseif ($arg == 'sleep') {
-            // TODO
-            $unblock_time = $block_time + 4 * 60 * 60;
+            $unblock_time = strtotime(date("Y-m-d", strtotime("+5 hours", $block_time)));
         } else {
             $unblock_time = time();
         }
-
+        // +10 分钟
         $second = time() + ceil($unblock_time - $block_time) + 5 * 60;
-        $hour = floor(($second - time()) / 60 / 60);
-
-        if ($arg == ' ban') {
-            // 推送被ban信息
-            Notice::run('banned', $hour);
-        }
+        $hour = $second / 60 / 60;
 
         self::$lock = $second;
-
         \lkeme\BiliHelper\Silver::$lock = $second;
         \lkeme\BiliHelper\MaterialObject::$lock = $second;
         \lkeme\BiliHelper\Socket::$lock = $second;

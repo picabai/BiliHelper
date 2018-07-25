@@ -44,6 +44,7 @@ class Index
     {
         self::$conf_file = $conf_file;
         self::loadConfigFile();
+
         while (true) {
             if (!Login::check()) {
                 self::$dotenv->overload();
@@ -60,9 +61,8 @@ class Index
             Winning::run();
             MaterialObject::run();
             Socket::run();
-            Danmu::run();
-            // sleep(1);
-            usleep(0.5 * 1000000);
+
+            sleep(0.5);
         }
     }
 
@@ -72,15 +72,12 @@ class Index
 
         if (is_file($file_path) && self::$conf_file != 'user.conf') {
             $load_files = [
+                'bili.conf',
                 self::$conf_file,
             ];
         } else {
-            $default_file_path = __DIR__ . '/conf/user.conf';
-            if (!is_file($default_file_path)) {
-                exit('默认加载配置文件不存在,请按照文档添加配置文件!');
-            }
-
             $load_files = [
+                'bili.conf',
                 'user.conf',
             ];
         }
@@ -100,3 +97,6 @@ class Index
 $conf_file = isset($argv[1]) ? $argv[1] : 'user.conf';
 // RUN
 Index::run($conf_file);
+
+
+

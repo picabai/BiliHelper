@@ -1,10 +1,12 @@
 <?php
 
-/**
- *  Website: https://mudew.com/
- *  Author: Lkeme
- *  License: The MIT License
- *  Updated: 2018
+/*!
+ * metowolf BilibiliHelper
+ * https://i-meto.com/
+ * Version 18.04.25 (0.7.3)
+ *
+ * Copyright 2018, metowolf
+ * Released under the MIT license
  */
 
 namespace lkeme\BiliHelper;
@@ -12,6 +14,8 @@ namespace lkeme\BiliHelper;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Bramus\Monolog\Formatter\ColoredLineFormatter;
+use lkeme\BiliHelper\Curl;
+
 
 class Log
 {
@@ -42,32 +46,16 @@ class Log
         return '';
     }
 
-    private static function writeLog($type, $message)
-    {
-        if (getenv('APP_WRITELOG') == 'true') {
-            $path = './' . getenv("APP_WRITELOGPATH") . '/';
-            if (!file_exists($path)) {
-                mkdir($path);
-                chmod($path, 0777);
-            }
-            $filename = $path . getenv('APP_USER') . ".log";
-            $date = date('[Y-m-d H:i:s] ');
-            $data = $date . ' Log.' . $type . ' ' . $message . PHP_EOL;
-            file_put_contents($filename, $data, FILE_APPEND);
-        }
-        return;
-    }
-
     public static function debug($message, array $context = [])
     {
-        self::writeLog('DEBUG', $message);
+        $message = self::prefix() . $message;
         self::getLogger()->addDebug($message, $context);
+        self::callback(Logger::DEBUG, 'DEBUG', $message);
     }
 
     public static function info($message, array $context = [])
     {
         $message = self::prefix() . $message;
-        self::writeLog('INFO', $message);
         self::getLogger()->addInfo($message, $context);
         self::callback(Logger::INFO, 'INFO', $message);
     }
@@ -75,7 +63,6 @@ class Log
     public static function notice($message, array $context = [])
     {
         $message = self::prefix() . $message;
-        self::writeLog('NOTICE', $message);
         self::getLogger()->addNotice($message, $context);
         self::callback(Logger::NOTICE, 'NOTICE', $message);
     }
@@ -83,7 +70,6 @@ class Log
     public static function warning($message, array $context = [])
     {
         $message = self::prefix() . $message;
-        self::writeLog('WARNING', $message);
         self::getLogger()->addWarning($message, $context);
         self::callback(Logger::WARNING, 'WARNING', $message);
     }
@@ -91,14 +77,13 @@ class Log
     public static function error($message, array $context = [])
     {
         $message = self::prefix() . $message;
-        self::writeLog('ERROR', $message);
         self::getLogger()->addError($message, $context);
         self::callback(Logger::ERROR, 'ERROR', $message);
     }
 
     public static function callback($levelId, $level, $message)
     {
-        $callback_level = (('APP_CALLBACK_LEVEL') == '') ? (Logger::ERROR) : intval(getenv('APP_CALLBACK_LEVEL'));
+        $callback_level = empty(getenv('APP_CALLBACK_LEVEL')) ? (Logger::ERROR) : intval(getenv('APP_CALLBACK_LEVEL'));
         if ($levelId >= $callback_level) {
             $url = str_replace('{account}', self::prefix(), getenv('APP_CALLBACK'));
             $url = str_replace('{level}', $level, $url);

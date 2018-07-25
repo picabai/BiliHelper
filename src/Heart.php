@@ -1,10 +1,12 @@
 <?php
 
-/**
- *  Website: https://mudew.com/
- *  Author: Lkeme
- *  License: The MIT License
- *  Updated: 2018
+/*!
+ * metowolf BilibiliHelper
+ * https://i-meto.com/
+ * Version 18.04.25 (0.7.3)
+ *
+ * Copyright 2018, metowolf
+ * Released under the MIT license
  */
 
 namespace lkeme\BiliHelper;
@@ -38,9 +40,9 @@ class Heart
         $data = json_decode($data, true);
 
         if (isset($data['code']) && $data['code']) {
-            Log::warning('WEB端 直播间心跳停止惹～', ['msg' => $data['message']]);
+            Log::warning('WEB 端的直播间心跳停止惹～', ['msg' => $data['message']]);
         } else {
-            Log::info('WEB端 发送心跳正常!');
+            Log::info('WEB 心跳正常');
         }
     }
 
@@ -53,9 +55,9 @@ class Heart
         $data = json_decode($data, true);
 
         if (isset($data['code']) && $data['code']) {
-            Log::warning('APP端 直播间心跳停止惹～', ['msg' => $data['message']]);
+            Log::warning('APP 端的直播间心跳停止惹～', ['msg' => $data['message']]);
         } else {
-            Log::info('APP端 发送心跳正常!');
+            Log::info('APP 心跳正常');
         }
     }
 }

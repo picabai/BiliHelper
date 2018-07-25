@@ -1,10 +1,12 @@
 <?php
 
-/**
- *  Website: https://mudew.com/
- *  Author: Lkeme
- *  License: The MIT License
- *  Updated: 2018
+/*!
+ * metowolf BilibiliHelper
+ * https://i-meto.com/
+ * Version 18.04.25 (0.7.3)
+ *
+ * Copyright 2018, metowolf
+ * Released under the MIT license
  */
 
 namespace lkeme\BiliHelper;
@@ -13,34 +15,26 @@ class Sign
 {
     public static function api($payload)
     {
-        # iOS 6680
-        $appkey = '27eb53fc9058f8c3';
-        $appsecret = 'c2ed53a74eeefe3cf99fbd01d8c9c375';
-        # Android
-        // $appkey = '1d8b6e7d45233436';
-        // $appsecret = '560c52ccd288fed045859ed18bffd973';
-        # 云视听 TV
-        // $appkey = '4409e2ce8ffd12b8';
-        // $appsecret = '59b43e04ad6965f34319062b478f83dd';
-
         $default = [
             'access_key' => getenv('ACCESS_TOKEN'),
             'actionKey' => 'appkey',
-            'appkey' => $appkey,
-            'build' => '6680',
+            'appkey' => getenv('APP_KEY'),
+            'appver' => '6620',
+            'build' => '6620',
             'device' => 'phone',
             'mobi_app' => 'iphone',
             'platform' => 'ios',
             'ts' => time(),
+            'type' => 'json',
         ];
-
         $payload = array_merge($payload, $default);
         if (isset($payload['sign'])) {
             unset($payload['sign']);
         }
         ksort($payload);
         $data = http_build_query($payload);
-        $payload['sign'] = md5($data . $appsecret);
+        $payload['sign'] = md5($data.getenv('APP_SECRET'));
+
         return $payload;
     }
 }
